@@ -1,5 +1,6 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal'); // <-- заменили библиотеку
+const qrcode = require('qrcode');
+const nodemailer = require('nodemailer');
 
 const client = new Client({
     authStrategy: new LocalAuth(),
@@ -8,9 +9,36 @@ const client = new Client({
     }
 });
 
-client.on('qr', (qr) => {
-    console.log('📤 Сканируй этот QR-код:\n');
-    qrcode.generate(qr, { small: true }); // <-- выводим QR-код в терминал
+// Настройка почты
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'ssovetzhanov03@gmail.com',
+        pass: 'glua fcga ynrm kgua' // пароль приложения, не обычный!
+    }
+});
+
+// Обработчик QR-кода
+client.on('qr', async (qr) => {
+    try {
+        console.log('📤 QR код для входа в WhatsApp Web:\n');
+        console.log(qr);
+
+        // Генерация изображения QR-кода
+        const qrImage = await qrcode.toDataURL(qr);
+
+        // Подготовка и отправка письма
+        await transporter.sendMail({
+            from: '"WhatsApp Бот" <ssovetzhanov03@gmail.com>',
+            to: 's.design4321@gmail.com',
+            subject: 'QR-код для входа в WhatsApp',
+            html: `<p>Вот ваш QR-код для авторизации в WhatsApp:</p><img src="${qrImage}" alt="QR Code">`
+        });
+
+        console.log('📧 QR-код отправлен на почту');
+    } catch (error) {
+        console.log('❌ Ошибка при отправке QR-кода:', error);
+    }
 });
 
 client.on('ready', () => {
